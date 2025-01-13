@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTP Client</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>NTP Client</h1>
+        </header>
+        <main>
+            <form id="ntp-form">
+                <label for="ntp-server">NTP Server (IP/DNS):</label>
+                <input type="text" id="ntp-server" placeholder="e.g., pool.ntp.org" required>
+
+                <label for="ntp-port">Port:</label>
+                <input type="number" id="ntp-port" value="123" required>
+
+                <button type="submit">Get Time</button>
+            </form>
+
+            <div id="result">
+                <h2>Time from Server:</h2>
+                <p id="server-time">-</p>
+            </div>
+        </main>
+        <footer>
+            <p>&copy; 2025 NTP Client. All Rights Reserved.</p>
+        </footer>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const form = document.getElementById('ntp-form');
+        const result = document.getElementById('server-time');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const host = document.getElementById('ntp-server').value;
+            const port = parseInt(document.getElementById('ntp-port').value, 10);
+
+            socket.emit('get-ntp-time', { host, port });
+
+            result.textContent = 'Fetching...';
+        });
+
+        socket.on('ntp-time', ({ time }) => {
+            result.textContent = time;
+        });
+
+        socket.on('ntp-error', ({ message }) => {
+            result.textContent = `Error: ${message}`;
+        });
+    </script>
+</body>
+</html>

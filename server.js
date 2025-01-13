@@ -64,6 +64,41 @@ io.on('connection', (socket) => {
     });
 });
 
+function getNetworkTime(host, port, callback) {
+    const client = dgram.createSocket('udp4');
+    const ntpData = Buffer.alloc(48);
+    ntpData[0] = 0b11100011; // NTP request header
+
+    // Timer untuk timeout
+    const timeout = setTimeout(() => {
+        client.close();
+        callback(new Error('Request timed out'));
+    }, 20000); // Timeout 20 detik
+
+    client.send(ntpData, 0, ntpData.length, port, host, (err) => {
+        if (err) {
+            clearTimeout(timeout);
+            client.close();
+            return callback(err);
+        }
+    });
+
+    client.on('message', (msg) => {
+        clearTimeout(timeout);
+        client.close();
+        const secondsSince1900 = msg.readUIntBE(40, 4) - 2208988800; // Convert NTP time to Unix time
+        const date = new Date(secondsSince1900 * 1000);
+        callback(null, date);
+    });
+
+    client.on('error', (err) => {
+        clearTimeout(timeout);
+        client.close();
+        callback(err);
+    });
+}
+
+
 // Menjalankan server
 server.listen(PORT, () => {
     console.log(`NTP Client running at http://localhost:${PORT}`);
